@@ -199,7 +199,6 @@
 
 <footer></footer>
 
-
 <script>
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
@@ -233,17 +232,23 @@
     };
     let cur = 'xibao';
 
-    function drawBg(type) {
+    function drawBg(type, callback) {
         type = type || cur;
         const path = config[type].path;
         let img = images[path]
         if (img) {
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            if (callback) {
+                callback();
+            }
         } else {
             img = new Image();
             img.onload = () => {
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                 images[path] = img;
+                if (callback) {
+                    callback();
+                }
             };
             img.src = path;
             img.crossOrigin = 'Anonymous';
@@ -251,18 +256,18 @@
     }
 
     function drawText(text) {
-        drawBg();
+        drawBg(cur, () => {
+            const textConf = config[cur].text;
+            ctx.font = textConf.fontSize + 'px ' + textConf.fontName;
+            ctx.fillStyle = textConf.color;
+            ctx.strokeStyle = textConf.strokeColor;
+            ctx.lineWidth = textConf.strokeSize;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
 
-        const textConf = config[cur].text;
-        ctx.font = textConf.fontSize + 'px ' + textConf.fontName;
-        ctx.fillStyle = textConf.color;
-        ctx.strokeStyle = textConf.strokeColor;
-        ctx.lineWidth = textConf.strokeSize;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-
-        ctx.strokeText(text, canvas.width / 2, canvas.height / 2);
-        ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+            ctx.strokeText(text, canvas.width / 2, canvas.height / 2);
+            ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+        });
     }
 
     function changeBg(src) {
