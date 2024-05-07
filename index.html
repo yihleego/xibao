@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>喜报生成器</title>
+    <meta charset="UTF-8">
+    <link href="favicon.png" rel="shortcut icon" type="image/x-icon"/>
+    <style>
+        :root {
+            --background-color: #EEE;
+            --main-color: dodgerblue;
+            --font-color: #111
+        }
+
+        html {
+            color: var(--font-color);
+            background: var(--background-color);
+            font: 12px 'PingFang SC', 'Helvetica Neue', Arial, 'Microsoft YaHei', sans-serif
+        }
+
+        body {
+            margin: 0
+        }
+
+        h1, h2, h3, h4, h5 {
+            margin: 0
+        }
+
+        h5 {
+            font-size: 12px;
+            padding-top: 1em
+        }
+
+        a {
+            color: #1e90ff;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        header {
+            padding: 40px 20px 20px 0
+        }
+
+        header h1 {
+            font-size: 2.4em
+        }
+
+        header p {
+            font-size: 14px;
+            margin: 0;
+            opacity: .5
+        }
+
+        body {
+            max-width: 1000px;
+            margin: 0 auto
+        }
+
+        .view-box {
+            display: flex;
+        }
+
+        .view-box .draw-box {
+            overflow: hidden;
+            padding: 10px;
+            box-sizing: border-box;
+            background: #d7dfe6;
+        }
+
+        .view-box .draw-box .draw-content-box {
+            background: #fff;
+            position: relative;
+            margin: 0 auto;
+            box-shadow: 0 2px 25px rgba(0, 0, 0, .1);
+            border-radius: 1px;
+        }
+
+        .view-box .setting-box {
+            width: 320px;
+            padding: 0 20px;
+        }
+
+        .view-box .setting-box h2 {
+            padding: 10px 5px;
+        }
+
+        .view-box .setting-box .cover-list {
+            padding: 20px 0;
+            position: relative;
+            z-index: 0;
+        }
+
+        .view-box .setting-box .cover-list .item {
+            float: left;
+            color: #1e90ff;
+            background: #222 no-repeat 50% 50%;
+            background-size: cover;
+            margin: 0 2px 2px 0;
+            cursor: pointer;
+            overflow: hidden;
+            /*font-size: 80px;*/
+            /*width: 1em;*/
+            /*height: 1em;*/
+            width: 120px;
+            object-fit: cover;
+            line-height: 1;
+            position: relative;
+        }
+
+        .view-box .setting-box .cover-list .item.active {
+            box-shadow: 0 0 0 2px currentColor;
+            border-radius: 1px;
+            z-index: 1;
+        }
+
+        .cover-list::after {
+            content: "";
+            display: table;
+            clear: both;
+        }
+
+        #canvas {
+            width: 600px;
+            height: 450px;
+            display: block;
+        }
+
+        .ui-input {
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            box-sizing: border-box;
+            display: inline-block;
+            vertical-align: top;
+            line-height: 24px;
+            padding: 4px 10px;
+            margin: 0;
+        }
+
+        .ui-input.large {
+            font-size: 14px;
+            line-height: 28px;
+        }
+
+        .ui-btn {
+            font-size: 12px;
+            line-height: 28px;
+            background: #fff;
+            color: #222;
+            padding: 0 15px;
+            border: 0;
+            box-shadow: 0 2px 0 #ddd, 0 0 0 1px #ddd inset;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .ui-btn.blue {
+            background: #1e90ff;
+            color: #fff;
+            box-shadow: 0 2px 0 #016fdc, 0 0 0 1px #016fdc inset;
+        }
+
+        .ui-btn.large {
+            font-size: 14px;
+            line-height: 38px;
+            padding: 0 20px;
+        }
+    </style>
+</head>
+<body>
+
+<header class="header">
+    <h1>「喜报生成器」</h1>
+    <p>一个支持自定义文本的所见即所得的喜报生成器</p>
+</header>
+
+<main class="main">
+    <div class="view-box">
+        <div class="draw-box">
+            <div class="draw-content-box">
+                <canvas id="canvas" width="1292" height="969"></canvas>
+            </div>
+        </div>
+        <div class="setting-box">
+            <h2>输入文字生成喜报</h2>
+            <div class="text-list">
+                <div class="item">
+                    <input id="textInput" class="ui-input large" style="width: 18em;" placeholder="嘻嘻哈哈">
+                </div>
+            </div>
+            <div class="cover-list">
+                <img src="xibao.webp" id="xibao" class="item active" alt="喜报"/>
+                <img src="beibao.webp" id="beibao" class="item" alt="悲报"/>
+            </div>
+            <div>
+                <button id="downloadBtn" class="ui-btn large blue" style="font-size: 20px;">导出喜报</button>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer></footer>
+
+
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const images = {}
+    const config = {
+        size: {
+            width: 1292,
+            height: 969,
+            scale: 0.6,
+        },
+        xibao: {
+            path: 'xibao.webp',
+            text: {
+                color: '#ff0000',
+                strokeColor: '#fcf88d',
+                strokeSize: 12,
+                fontSize: 108,
+                fontName: 'Arial',
+            },
+        },
+        beibao: {
+            path: 'beibao.webp',
+            text: {
+                color: '#2d2d2d',
+                strokeColor: 'white',
+                strokeSize: 12,
+                fontSize: 108,
+                fontName: 'Arial',
+            },
+        },
+    };
+    let cur = 'xibao';
+
+    function drawBg(type) {
+        type = type || cur;
+        const path = config[type].path;
+        let img = images[path]
+        if (img) {
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        } else {
+            img = new Image();
+            img.onload = () => {
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                images[path] = img;
+            };
+            img.src = path;
+            img.crossOrigin = 'Anonymous';
+        }
+    }
+
+    function drawText(text) {
+        drawBg();
+
+        const textConf = config[cur].text;
+        ctx.font = textConf.fontSize + 'px ' + textConf.fontName;
+        ctx.fillStyle = textConf.color;
+        ctx.strokeStyle = textConf.strokeColor;
+        ctx.lineWidth = textConf.strokeSize;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        ctx.strokeText(text, canvas.width / 2, canvas.height / 2);
+        ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+    }
+
+    function changeBg(src) {
+        cur = src;
+        drawText(document.getElementById('textInput').value || "");
+    }
+
+    function init() {
+        // canvas.width = config.size.width;
+        // canvas.height = config.size.height;
+        drawBg(cur);
+    }
+
+    document.getElementById("xibao").addEventListener('click', (e) => {
+        changeBg('xibao');
+        document.getElementById("xibao").classList.add("active");
+        document.getElementById("beibao").classList.remove("active");
+    })
+
+    document.getElementById("beibao").addEventListener('click', (e) => {
+        changeBg('beibao');
+        document.getElementById("beibao").classList.add("active");
+        document.getElementById("xibao").classList.remove("active");
+    })
+
+    document.getElementById('textInput').addEventListener('input', (e) => {
+        drawText(e.target.value || "");
+    });
+
+    document.getElementById('downloadBtn').addEventListener('click', (e) => {
+        console.log(canvas)
+        const image = canvas.toDataURL('image/png').replace('image/png', 'image/octet-stream');
+        const link = document.createElement('a');
+        link.download = 'poster.png';
+        link.href = image;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
+
+    window.onload = () => {
+        init();
+    }
+</script>
+</body>
+</html>
