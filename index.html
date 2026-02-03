@@ -133,6 +133,7 @@
             line-height: 24px;
             padding: 4px 10px;
             margin: 0;
+            resize: vertical;
         }
 
         .ui-input.large {
@@ -183,7 +184,7 @@
             <h2>输入文字生成喜报</h2>
             <div class="text-list">
                 <div class="item">
-                    <input id="textInput" class="ui-input large" style="width: 18em;" placeholder="嘻嘻哈哈">
+                    <textarea id="textInput" class="ui-input large" style="width: 18em; height: 100px; vertical-align: middle;" placeholder="嘻嘻哈哈"></textarea>
                 </div>
             </div>
             <div class="cover-list">
@@ -262,11 +263,20 @@
             ctx.fillStyle = textConf.color;
             ctx.strokeStyle = textConf.strokeColor;
             ctx.lineWidth = textConf.strokeSize;
+            ctx.lineHeight = textConf.fontSize
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
 
-            ctx.strokeText(text, canvas.width / 2, canvas.height / 2);
-            ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+            const lines = text.split('\n');
+            const lineHeight = textConf.fontSize * 1.2;
+            const totalHeight = lines.length * lineHeight;
+            let startY = canvas.height / 2 - (totalHeight / 2) + (lineHeight / 2);
+
+            lines.forEach((line, index) => {
+                const y = startY + index * lineHeight;
+                ctx.strokeText(line, canvas.width / 2, y);
+                ctx.fillText(line, canvas.width / 2, y);
+            });
         });
     }
 
