@@ -6,174 +6,169 @@
     <link href="favicon.png" rel="shortcut icon" type="image/x-icon"/>
     <style>
         :root {
-            --background-color: #EEE;
-            --main-color: dodgerblue;
-            --font-color: #111
+            --background-color: #f4f7f9;
+            --main-color: #1e90ff;
+            --font-color: #333;
+            --sidebar-width: 320px;
+        }
+
+        * {
+            box-sizing: border-box;
         }
 
         html {
             color: var(--font-color);
             background: var(--background-color);
-            font: 12px 'PingFang SC', 'Helvetica Neue', Arial, 'Microsoft YaHei', sans-serif
+            font: 14px 'PingFang SC', 'Helvetica Neue', Arial, 'Microsoft YaHei', sans-serif;
         }
 
         body {
-            margin: 0
-        }
-
-        h1, h2, h3, h4, h5 {
-            margin: 0
-        }
-
-        h5 {
-            font-size: 12px;
-            padding-top: 1em
-        }
-
-        a {
-            color: #1e90ff;
-            text-decoration: none;
-            cursor: pointer;
+            margin: 0;
+            padding: 0 20px;
+            max-width: 1100px;
+            margin: 0 auto;
         }
 
         header {
-            padding: 40px 20px 20px 0
+            padding: 40px 0 20px;
+            text-align: center;
         }
 
         header h1 {
-            font-size: 2.4em
+            font-size: 2.5em;
+            margin-bottom: 10px;
         }
 
         header p {
-            font-size: 14px;
-            margin: 0;
-            opacity: .5
-        }
-
-        body {
-            max-width: 1000px;
-            margin: 0 auto
+            font-size: 1.1em;
+            opacity: 0.6;
         }
 
         .view-box {
             display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
         }
 
-        .view-box .draw-box {
-            overflow: hidden;
-            padding: 10px;
-            box-sizing: border-box;
+        .draw-box {
+            flex: 1;
+            min-width: 300px;
             background: #d7dfe6;
+            padding: 20px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        .view-box .draw-box .draw-content-box {
+        .draw-content-box {
             background: #fff;
-            position: relative;
-            margin: 0 auto;
-            box-shadow: 0 2px 25px rgba(0, 0, 0, .1);
-            border-radius: 1px;
-        }
-
-        .view-box .setting-box {
-            width: 320px;
-            padding: 0 20px;
-        }
-
-        .view-box .setting-box h2 {
-            padding: 10px 5px;
-        }
-
-        .view-box .setting-box .cover-list {
-            padding: 20px 0;
-            position: relative;
-            z-index: 0;
-        }
-
-        .view-box .setting-box .cover-list .item {
-            float: left;
-            color: #1e90ff;
-            background: #222 no-repeat 50% 50%;
-            background-size: cover;
-            margin: 0 2px 2px 0;
-            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
             overflow: hidden;
-            /*font-size: 80px;*/
-            /*width: 1em;*/
-            /*height: 1em;*/
-            width: 120px;
-            object-fit: cover;
-            line-height: 1;
-            position: relative;
-        }
-
-        .view-box .setting-box .cover-list .item.active {
-            box-shadow: 0 0 0 2px currentColor;
-            border-radius: 1px;
-            z-index: 1;
-        }
-
-        .cover-list::after {
-            content: "";
-            display: table;
-            clear: both;
+            max-width: 100%;
         }
 
         #canvas {
-            width: 600px;
-            height: 450px;
+            max-width: 100%;
+            height: auto;
             display: block;
         }
 
+        .setting-box {
+            width: var(--sidebar-width);
+            padding: 10px;
+        }
+
+        .setting-box h2 {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+        }
+
+        .text-list .item {
+            margin-bottom: 20px;
+        }
+
         .ui-input {
-            border: 1px solid #ccc;
-            border-radius: 3px;
-            box-sizing: border-box;
-            display: inline-block;
-            vertical-align: top;
-            line-height: 24px;
-            padding: 4px 10px;
-            margin: 0;
+            width: 100%;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            padding: 12px;
+            font-size: 16px;
+            transition: border-color 0.2s;
             resize: vertical;
         }
 
-        .ui-input.large {
-            font-size: 14px;
-            line-height: 28px;
+        .ui-input:focus {
+            border-color: var(--main-color);
+            outline: none;
+        }
+
+        .cover-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        .cover-list img {
+            width: 100%;
+            aspect-ratio: 4/3;
+            object-fit: cover;
+            border-radius: 6px;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .cover-list img.active {
+            border-color: var(--main-color);
+            transform: scale(1.02);
+            box-shadow: 0 4px 12px rgba(30, 144, 255, 0.3);
         }
 
         .ui-btn {
-            font-size: 12px;
-            line-height: 28px;
-            background: #fff;
-            color: #222;
-            padding: 0 15px;
-            border: 0;
-            box-shadow: 0 2px 0 #ddd, 0 0 0 1px #ddd inset;
-            border-radius: 3px;
+            width: 100%;
+            font-size: 18px;
+            font-weight: bold;
+            padding: 15px;
+            border: none;
+            border-radius: 6px;
             cursor: pointer;
+            transition: transform 0.1s, background 0.2s;
         }
 
         .ui-btn.blue {
-            background: #1e90ff;
+            background: var(--main-color);
             color: #fff;
-            box-shadow: 0 2px 0 #016fdc, 0 0 0 1px #016fdc inset;
         }
 
-        .ui-btn.large {
-            font-size: 14px;
-            line-height: 38px;
-            padding: 0 20px;
+        .ui-btn:active {
+            transform: scale(0.98);
+        }
+
+        @media (max-width: 768px) {
+            .view-box {
+                flex-direction: column;
+            }
+            .setting-box {
+                width: 100%;
+            }
+            header h1 {
+                font-size: 2em;
+            }
         }
     </style>
 </head>
 <body>
 
-<header class="header">
+<header>
     <h1>「喜报生成器」</h1>
-    <p>一个支持自定义文本的所见即所得的喜报生成器</p>
+    <p>支持自定义文本，一键生成喜报/悲报图片</p>
 </header>
 
-<main class="main">
+<main>
     <div class="view-box">
         <div class="draw-box">
             <div class="draw-content-box">
@@ -184,16 +179,14 @@
             <h2>输入文字生成喜报</h2>
             <div class="text-list">
                 <div class="item">
-                    <textarea id="textInput" class="ui-input large" style="width: 18em; height: 100px; vertical-align: middle;" placeholder="嘻嘻哈哈"></textarea>
+                    <textarea id="textInput" class="ui-input" rows="4" placeholder="嘻嘻哈哈"></textarea>
                 </div>
             </div>
-            <div class="cover-list">
-                <img src="xibao.webp" id="xibao" class="item active" alt="喜报"/>
-                <img src="beibao.webp" id="beibao" class="item" alt="悲报"/>
+            <div class="cover-list" id="templateList">
+                <img src="xibao.webp" data-type="xibao" class="active" alt="喜报" title="点击切换喜报"/>
+                <img src="beibao.webp" data-type="beibao" alt="悲报" title="点击切换悲报"/>
             </div>
-            <div>
-                <button id="downloadBtn" class="ui-btn large blue" style="font-size: 20px;">导出喜报</button>
-            </div>
+            <button id="downloadBtn" class="ui-btn blue">导出图片</button>
         </div>
     </div>
 </main>
@@ -203,72 +196,85 @@
 <script>
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
-    const images = {}
+    const textInput = document.getElementById('textInput');
+    const templateList = document.getElementById('templateList');
+    const downloadBtn = document.getElementById('downloadBtn');
+
     const config = {
-        size: {
-            width: 1292,
-            height: 969,
-            scale: 0.6,
-        },
-        xibao: {
-            path: 'xibao.webp',
-            text: {
+        fontFamily: "'PingFang SC', 'Helvetica Neue', Arial, 'Microsoft YaHei', sans-serif",
+        templates: {
+            xibao: {
                 color: '#ff0000',
                 strokeColor: '#fcf88d',
                 strokeSize: 12,
                 fontSize: 108,
-                fontName: 'Arial',
             },
-        },
-        beibao: {
-            path: 'beibao.webp',
-            text: {
+            beibao: {
                 color: '#2d2d2d',
-                strokeColor: 'white',
+                strokeColor: '#ffffff',
                 strokeSize: 12,
                 fontSize: 108,
-                fontName: 'Arial',
-            },
-        },
-    };
-    let cur = 'xibao';
-
-    function drawBg(type, callback) {
-        type = type || cur;
-        const path = config[type].path;
-        let img = images[path]
-        if (img) {
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            if (callback) {
-                callback();
             }
-        } else {
-            img = new Image();
-            img.onload = () => {
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                images[path] = img;
-                if (callback) {
-                    callback();
-                }
-            };
-            img.src = path;
-            img.crossOrigin = 'Anonymous';
         }
+    };
+
+    let curType = 'xibao';
+    const imageCache = new Map();
+
+    /**
+     * Loads an image from a URL and caches it.
+     */
+    function loadImage(src) {
+        if (imageCache.has(src)) return Promise.resolve(imageCache.get(src));
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.crossOrigin = 'Anonymous';
+            img.onload = () => {
+                imageCache.set(src, img);
+                resolve(img);
+            };
+            img.onerror = reject;
+            img.src = src;
+        });
     }
 
-    function drawText(text) {
-        drawBg(cur, () => {
-            const textConf = config[cur].text;
-            ctx.font = textConf.fontSize + 'px ' + textConf.fontName;
-            ctx.fillStyle = textConf.color;
-            ctx.strokeStyle = textConf.strokeColor;
-            ctx.lineWidth = textConf.strokeSize;
-            ctx.lineHeight = textConf.fontSize
+    let isDrawing = false;
+
+    /**
+     * Throttles drawing calls using requestAnimationFrame for better performance.
+     */
+    function requestDraw() {
+        if (isDrawing) return;
+        isDrawing = true;
+        requestAnimationFrame(() => {
+            draw();
+            isDrawing = false;
+        });
+    }
+
+    async function draw() {
+        const typeConfig = config.templates[curType];
+        const text = textInput.value || "";
+
+        try {
+            const img = await loadImage(`${curType}.webp`);
+
+            // Clear canvas and draw background template
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            // Configure text styles based on the selected template
+            ctx.font = `bold ${typeConfig.fontSize}px ${config.fontFamily}`;
+            ctx.fillStyle = typeConfig.color;
+            ctx.strokeStyle = typeConfig.strokeColor;
+            ctx.lineWidth = typeConfig.strokeSize;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
+            ctx.lineJoin = 'round';
 
+            // Calculate vertical positioning for multi-line text
             const lines = text.split('\n');
-            const lineHeight = textConf.fontSize * 1.2;
+            const lineHeight = typeConfig.fontSize * 1.2;
             const totalHeight = lines.length * lineHeight;
             let startY = canvas.height / 2 - (totalHeight / 2) + (lineHeight / 2);
 
@@ -277,50 +283,42 @@
                 ctx.strokeText(line, canvas.width / 2, y);
                 ctx.fillText(line, canvas.width / 2, y);
             });
-        });
+        } catch (err) {
+            console.error('Failed to draw canvas:', err);
+        }
     }
 
-    function changeBg(src) {
-        cur = src;
-        drawText(document.getElementById('textInput').value || "");
-    }
+    // Template selection with event delegation
+    templateList.addEventListener('click', (e) => {
+        const target = e.target.closest('img');
+        if (!target) return;
 
-    function init() {
-        // canvas.width = config.size.width;
-        // canvas.height = config.size.height;
-        drawBg(cur);
-    }
+        curType = target.dataset.type;
 
-    document.getElementById("xibao").addEventListener('click', (e) => {
-        changeBg('xibao');
-        document.getElementById("xibao").classList.add("active");
-        document.getElementById("beibao").classList.remove("active");
-    })
+        // Update UI active state
+        templateList.querySelectorAll('img').forEach(img => img.classList.remove('active'));
+        target.classList.add('active');
 
-    document.getElementById("beibao").addEventListener('click', (e) => {
-        changeBg('beibao');
-        document.getElementById("beibao").classList.add("active");
-        document.getElementById("xibao").classList.remove("active");
-    })
-
-    document.getElementById('textInput').addEventListener('input', (e) => {
-        drawText(e.target.value || "");
+        requestDraw();
     });
 
-    document.getElementById('downloadBtn').addEventListener('click', (e) => {
-        console.log(canvas)
-        const image = canvas.toDataURL('image/png').replace('image/png', 'image/octet-stream');
-        const link = document.createElement('a');
-        link.download = 'poster.png';
-        link.href = image;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+    // Re-draw when input changes
+    textInput.addEventListener('input', requestDraw);
+
+    // Export canvas as PNG image
+    downloadBtn.addEventListener('click', () => {
+        canvas.toBlob((blob) => {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.download = `${curType}_${Date.now()}.png`;
+            link.href = url;
+            link.click();
+            URL.revokeObjectURL(url);
+        }, 'image/png');
     });
 
-    window.onload = () => {
-        init();
-    }
+    // Initial draw on page load
+    window.addEventListener('DOMContentLoaded', requestDraw);
 </script>
 </body>
 </html>
