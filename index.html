@@ -144,6 +144,16 @@
             color: #fff;
         }
 
+        .ui-btn.green {
+            background: #4caf50;
+            color: #fff;
+        }
+
+        .ui-btn.red {
+            background: #f44336;
+            color: #fff;
+        }
+
         .ui-btn:active {
             transform: scale(0.98);
         }
@@ -186,6 +196,11 @@
                 <img src="xibao.webp" data-type="xibao" class="active" alt="喜报" title="点击切换喜报"/>
                 <img src="beibao.webp" data-type="beibao" alt="悲报" title="点击切换悲报"/>
             </div>
+            <div style="margin-bottom: 20px; display: flex; gap: 10px;">
+                <button id="uploadBtn" class="ui-btn green" style="flex: 1;">添加贴纸</button>
+                <button id="deleteBtn" class="ui-btn red" style="flex: 1; display: none;">删除选中</button>
+                <input type="file" id="fileInput" style="display: none;" accept="image/*">
+            </div>
             <button id="downloadBtn" class="ui-btn blue">导出图片</button>
         </div>
     </div>
@@ -199,6 +214,9 @@
     const textInput = document.getElementById('textInput');
     const templateList = document.getElementById('templateList');
     const downloadBtn = document.getElementById('downloadBtn');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const deleteBtn = document.getElementById('deleteBtn');
+    const fileInput = document.getElementById('fileInput');
 
     const config = {
         fontFamily: "'PingFang SC', 'Helvetica Neue', Arial, 'Microsoft YaHei', sans-serif",
@@ -215,11 +233,19 @@
                 strokeSize: 12,
                 fontSize: 108,
             }
-        }
+        },
+        handleSize: 10
     };
 
     let curType = 'xibao';
     const imageCache = new Map();
+    let stickers = [];
+    let selectedStickerIndex = -1;
+    let interactionMode = null; // 'move', 'resize', 'rotate'
+    let startX, startY;
+    let startRotation;
+    let startWidth, startHeight;
+    let startDistance;
 
     /**
      * Loads an image from a URL and caches it.
@@ -263,6 +289,36 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
+            // Draw stickers
+            stickers.forEach((sticker, index) => {
+                ctx.save();
+                ctx.translate(sticker.x, sticker.y);
+                ctx.rotate(sticker.rotation);
+                ctx.drawImage(sticker.img, -sticker.width / 2, -sticker.height / 2, sticker.width, sticker.height);
+
+                // Draw selection border and handles if selected
+                if (index === selectedStickerIndex) {
+                    ctx.strokeStyle = '#00a8ff';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(-sticker.width / 2, -sticker.height / 2, sticker.width, sticker.height);
+
+                    // Draw resize handle (bottom-right)
+                    ctx.fillStyle = '#fff';
+                    ctx.fillRect(sticker.width / 2 - config.handleSize / 2, sticker.height / 2 - config.handleSize / 2, config.handleSize, config.handleSize);
+                    ctx.strokeRect(sticker.width / 2 - config.handleSize / 2, sticker.height / 2 - config.handleSize / 2, config.handleSize, config.handleSize);
+
+                    // Draw rotate handle (top-center)
+                    ctx.beginPath();
+                    ctx.arc(0, -sticker.height / 2 - 20, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.moveTo(0, -sticker.height / 2);
+                    ctx.lineTo(0, -sticker.height / 2 - 15);
+                    ctx.stroke();
+                }
+                ctx.restore();
+            });
+
             // Configure text styles based on the selected template
             ctx.font = `bold ${typeConfig.fontSize}px ${config.fontFamily}`;
             ctx.fillStyle = typeConfig.color;
@@ -304,6 +360,215 @@
 
     // Re-draw when input changes
     textInput.addEventListener('input', requestDraw);
+
+    // Sticker upload
+    uploadBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+                const maxWidth = canvas.width * 0.3;
+                let width = img.width;
+                let height = img.height;
+                if (width > maxWidth) {
+                    height = (maxWidth / width) * height;
+                    width = maxWidth;
+                }
+                stickers.push({
+                    img,
+                    x: canvas.width / 2,
+                    y: canvas.height / 2,
+                    width,
+                    height,
+                    rotation: 0
+                });
+                selectedStickerIndex = stickers.length - 1;
+                deleteBtn.style.display = 'block';
+                requestDraw();
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+        e.target.value = ''; // Reset for same file selection
+    });
+
+    // Delete selected sticker
+    deleteBtn.addEventListener('click', () => {
+        if (selectedStickerIndex > -1) {
+            stickers.splice(selectedStickerIndex, 1);
+            selectedStickerIndex = -1;
+            deleteBtn.style.display = 'none';
+            requestDraw();
+        }
+    });
+
+    function getMousePos(e) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        return {
+            x: (e.clientX - rect.left) * scaleX,
+            y: (e.clientY - rect.top) * scaleY
+        };
+    }
+
+    function isPointInHandle(px, py, hx, hy) {
+        return Math.abs(px - hx) < config.handleSize && Math.abs(py - hy) < config.handleSize;
+    }
+
+    function rotatePoint(px, py, cx, cy, angle) {
+        const cos = Math.cos(-angle);
+        const sin = Math.sin(-angle);
+        const dx = px - cx;
+        const dy = py - cy;
+        return {
+            x: cx + dx * cos - dy * sin,
+            y: cy + dx * sin + dy * cos
+        };
+    }
+
+    canvas.addEventListener('mousedown', (e) => {
+        const pos = getMousePos(e);
+        startX = pos.x;
+        startY = pos.y;
+
+        // Check if clicked on a handle of the selected sticker
+        if (selectedStickerIndex > -1) {
+            const sticker = stickers[selectedStickerIndex];
+            const p = rotatePoint(pos.x, pos.y, sticker.x, sticker.y, sticker.rotation);
+
+            // Resize handle (bottom-right)
+            if (isPointInHandle(p.x, p.y, sticker.x + sticker.width / 2, sticker.y + sticker.height / 2)) {
+                interactionMode = 'resize';
+                startWidth = sticker.width;
+                startHeight = sticker.height;
+                return;
+            }
+            // Rotate handle (top-center)
+            if (Math.hypot(p.x - sticker.x, p.y - (sticker.y - sticker.height / 2 - 20)) < 10) {
+                interactionMode = 'rotate';
+                startRotation = sticker.rotation;
+                return;
+            }
+        }
+
+        // Check if clicked on any sticker (top to bottom)
+        let found = false;
+        for (let i = stickers.length - 1; i >= 0; i--) {
+            const sticker = stickers[i];
+            const p = rotatePoint(pos.x, pos.y, sticker.x, sticker.y, sticker.rotation);
+            if (p.x >= sticker.x - sticker.width / 2 && p.x <= sticker.x + sticker.width / 2 &&
+                p.y >= sticker.y - sticker.height / 2 && p.y <= sticker.y + sticker.height / 2) {
+
+                // Bring to front
+                if (i !== stickers.length - 1) {
+                    const [s] = stickers.splice(i, 1);
+                    stickers.push(s);
+                    selectedStickerIndex = stickers.length - 1;
+                } else {
+                    selectedStickerIndex = i;
+                }
+
+                interactionMode = 'move';
+                deleteBtn.style.display = 'block';
+                found = true;
+                requestDraw();
+                break;
+            }
+        }
+
+        if (!found) {
+            selectedStickerIndex = -1;
+            deleteBtn.style.display = 'none';
+            interactionMode = null;
+            requestDraw();
+        }
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        const pos = getMousePos(e);
+        const rect = canvas.getBoundingClientRect();
+
+        // Change cursor based on what's under the mouse
+        if (!interactionMode) {
+            let foundHandle = false;
+            if (selectedStickerIndex > -1) {
+                const sticker = stickers[selectedStickerIndex];
+                const p = rotatePoint(pos.x, pos.y, sticker.x, sticker.y, sticker.rotation);
+                if (isPointInHandle(p.x, p.y, sticker.x + sticker.width / 2, sticker.y + sticker.height / 2)) {
+                    canvas.style.cursor = 'nwse-resize';
+                    foundHandle = true;
+                } else if (Math.hypot(p.x - sticker.x, p.y - (sticker.y - sticker.height / 2 - 20)) < 10) {
+                    canvas.style.cursor = 'grab';
+                    foundHandle = true;
+                }
+            }
+
+            if (!foundHandle) {
+                let foundSticker = false;
+                for (let i = stickers.length - 1; i >= 0; i--) {
+                    const sticker = stickers[i];
+                    const p = rotatePoint(pos.x, pos.y, sticker.x, sticker.y, sticker.rotation);
+                    if (p.x >= sticker.x - sticker.width / 2 && p.x <= sticker.x + sticker.width / 2 &&
+                        p.y >= sticker.y - sticker.height / 2 && p.y <= sticker.y + sticker.height / 2) {
+                        canvas.style.cursor = 'move';
+                        foundSticker = true;
+                        break;
+                    }
+                }
+                if (!foundSticker) canvas.style.cursor = 'default';
+            }
+        }
+
+        if (!interactionMode || selectedStickerIndex === -1) return;
+
+        const sticker = stickers[selectedStickerIndex];
+
+        if (interactionMode === 'move') {
+            sticker.x += pos.x - startX;
+            sticker.y += pos.y - startY;
+            startX = pos.x;
+            startY = pos.y;
+        } else if (interactionMode === 'resize') {
+            const p = rotatePoint(pos.x, pos.y, sticker.x, sticker.y, sticker.rotation);
+            const newWidth = Math.max(20, (p.x - sticker.x) * 2);
+            const newHeight = Math.max(20, (p.y - sticker.y) * 2);
+            const ratio = sticker.img.width / sticker.img.height;
+
+            if (newWidth / newHeight > ratio) {
+                sticker.height = newHeight;
+                sticker.width = newHeight * ratio;
+            } else {
+                sticker.width = newWidth;
+                sticker.height = newWidth / ratio;
+            }
+        } else if (interactionMode === 'rotate') {
+            sticker.rotation = Math.atan2(pos.y - sticker.y, pos.x - sticker.x) + Math.PI / 2;
+        }
+
+        requestDraw();
+    });
+
+    window.addEventListener('mouseup', () => {
+        interactionMode = null;
+    });
+
+    // Keyboard support for deleting selected sticker
+    window.addEventListener('keydown', (e) => {
+        if ((e.key === 'Delete' || e.key === 'Backspace') && selectedStickerIndex > -1) {
+            // Only delete if not typing in textarea
+            if (document.activeElement !== textInput) {
+                stickers.splice(selectedStickerIndex, 1);
+                selectedStickerIndex = -1;
+                deleteBtn.style.display = 'none';
+                requestDraw();
+            }
+        }
+    });
 
     // Export canvas as PNG image
     downloadBtn.addEventListener('click', () => {
